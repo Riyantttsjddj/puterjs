@@ -4,12 +4,18 @@ set -e
 echo "Update sistem..."
 apt update && apt upgrade -y
 
-echo "Install Node.js..."
+echo "Install Node.js dan sqlite3..."
 curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt install -y nodejs sqlite3
 
+echo "Buat user khusus untuk aplikasi (chatgptmem)..."
+if ! id -u chatgptmem > /dev/null 2>&1; then
+  useradd -r -s /usr/sbin/nologin chatgptmem
+fi
+
 echo "Buat direktori aplikasi..."
 mkdir -p /opt/chatgpt-mem
+chown chatgptmem:chatgptmem /opt/chatgpt-mem
 cd /opt/chatgpt-mem
 
 echo "Buat file package.json..."
@@ -184,7 +190,7 @@ After=network.target
 [Service]
 ExecStart=/usr/bin/node /opt/chatgpt-mem/server.js
 Restart=always
-User=nobody
+User=chatgptmem
 Environment=NODE_ENV=production
 WorkingDirectory=/opt/chatgpt-mem
 
