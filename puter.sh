@@ -1,7 +1,4 @@
 #!/bin/bash
-# Setup minimal chat GPT style di VPS dengan Node.js, sqlite, dan systemd
-# Pastikan VPS sudah update dan punya IP publik
-
 set -e
 
 echo "Update sistem..."
@@ -49,7 +46,6 @@ const PORT = 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Inisialisasi DB SQLite
 const db = new sqlite3.Database('./chat.db');
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS chats (
@@ -61,23 +57,18 @@ db.serialize(() => {
   )`);
 });
 
-// Simulasi fungsi AI (ganti dengan API GPT asli jika punya)
 function generateResponse(message, history) {
-  // Contoh sederhana balasan dengan echo dan simpan memori
   let reply = "Kamu berkata: " + message + ". Ini balasan sederhana dari server.";
-  // Jika pesan mengandung "kode", berikan contoh kode terformat
   if(message.toLowerCase().includes('kode')) {
     reply += "\n\n```javascript\nconsole.log('Ini contoh kode JavaScript');\n```";
   }
   return reply;
 }
 
-// Endpoint chat dengan memori percakapan
 app.post('/chat', (req, res) => {
   const user = req.body.user || "anonymous";
   const message = req.body.message || "";
 
-  // Ambil chat history user terakhir 5 pesan
   db.all(`SELECT message, response FROM chats WHERE user = ? ORDER BY id DESC LIMIT 5`, [user], (err, rows) => {
     if(err) return res.status(500).json({error: err.message});
 
@@ -85,14 +76,12 @@ app.post('/chat', (req, res) => {
 
     const response = generateResponse(message, history);
 
-    // Simpan ke DB
     db.run(`INSERT INTO chats(user, message, response) VALUES(?,?,?)`, [user, message, response]);
 
     res.json({response});
   });
 });
 
-// Endpoint untuk export chat ke file txt
 app.get('/export/:user', (req, res) => {
   const user = req.params.user;
 
@@ -113,7 +102,6 @@ app.get('/export/:user', (req, res) => {
   });
 });
 
-// Serve frontend sederhana
 app.get('/', (req, res) => {
   res.send(`
   <!DOCTYPE html>
@@ -143,7 +131,6 @@ app.get('/', (req, res) => {
 
       function appendMessage(sender, text) {
         if(text.match(/```([\\s\\S]*?)```/gm)){
-          // Format kode
           text = text.replace(/```([\\s\\S]*?)```/gm, (match, p1) => {
             return '<pre>' + p1 + '</pre>';
           });
@@ -210,4 +197,7 @@ systemctl daemon-reload
 systemctl enable chatgpt-mem.service
 systemctl start chatgpt-mem.service
 
-echo "Selesai. Akses aplikasi di http://IP_VPS:3000"
+# Ambil IP publik otomatis
+PUBLIC_IP=$(curl -s https://api.ipify.org || echo "IP_Tidak_Diketahui")
+
+echo "Selesai. Aplikasi bisa diakses di http://$PUBLIC_IP:3000"
